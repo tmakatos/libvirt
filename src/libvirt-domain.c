@@ -1527,7 +1527,6 @@ virDomainCoreDumpWithFormat(virDomainPtr domain, const char *to,
     return -1;
 }
 
-
 /**
  * virDomainScreenshot:
  * @domain: a domain object
@@ -10660,6 +10659,27 @@ virDomainBlockJobAbort(virDomainPtr dom, const char *disk,
     return -1;
 }
 
+/**
+ * virDomainJobWait:
+ * @domain: a domain object
+ * @op: the job type to wait for
+ *
+ * Waits for the specified pending domain job to complete.
+ *
+ * Returns 0 in case of success and -1 in case of failure.
+ *
+ * Since: 10.1.0
+ */
+int
+virDomainJobWait(virDomainPtr domain, int op)
+{
+    if (domain->conn->driver->domainJobWait) {
+        return domain->conn->driver->domainJobWait(domain, op);
+    }
+    virReportError(VIR_ERR_NO_SUPPORT, "%s",
+            _("does not support waiting for domain job to complete"));
+    return -1;
+}
 
 /**
  * virDomainGetBlockJobInfo:

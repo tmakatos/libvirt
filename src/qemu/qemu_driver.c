@@ -3286,6 +3286,48 @@ qemuDomainCoreDump(virDomainPtr dom,
                                         flags);
 }
 
+static int
+qemuDomainJobWait(virDomainPtr dom, int op)
+{
+    virDomainObj *vm;
+    int ret = -1;
+    virQEMUDriver *driver = dom->conn->privateData;
+    qemuDomainObjPrivate *priv = NULL;
+
+    if (!(vm = qemuDomainObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainJobWaitEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
+        goto cleanup;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto endjob;
+
+    priv = vm->privateData;
+
+    if ((virDomainJobOperation)op == VIR_DOMAIN_JOB_OPERATION_DUMP) {
+        if (priv->job.asyncJob == QEMU_ASYNC_JOB_DUMP) {
+            ret = qemuDumpWaitForCompletion(vm);
+        } else {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("job mismatch, want=%d have=%d"), op, priv->job.asyncJob);
+        }
+    } else {
+        virReportError(VIR_ERR_NO_SUPPORT,
+                       _("waiting for job type %d not supported "), op);
+    }
+
+endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
 
 static char *
 qemuDomainScreenshot(virDomainPtr dom,
@@ -20060,6 +20102,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetJobStats = qemuDomainGetJobStats, /* 1.0.3 */
     .domainAbortJob = qemuDomainAbortJob, /* 0.7.7 */
     .domainAbortJobFlags = qemuDomainAbortJobFlags, /* 8.5.0 */
+    .domainJobWait = qemuDomainJobWait, /* 10.1.0 */
     .domainMigrateGetMaxDowntime = qemuDomainMigrateGetMaxDowntime, /* 3.7.0 */
     .domainMigrateSetMaxDowntime = qemuDomainMigrateSetMaxDowntime, /* 0.8.0 */
     .domainMigrateGetCompressionCache = qemuDomainMigrateGetCompressionCache, /* 1.0.3 */

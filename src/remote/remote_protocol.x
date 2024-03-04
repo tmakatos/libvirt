@@ -1406,6 +1406,11 @@ struct remote_domain_block_job_abort_args {
     unsigned int flags;
 };
 
+struct remote_domain_job_wait_args {
+    remote_nonnull_domain dom;
+    int op;
+};
+
 struct remote_domain_get_block_job_info_args {
     remote_nonnull_domain dom;
     remote_nonnull_string path;
@@ -7037,5 +7042,12 @@ enum remote_procedure {
      * @acl: node_device:save:!VIR_NODE_DEVICE_UPDATE_AFFECT_CONFIG|VIR_NODE_DEVICE_UPDATE_AFFECT_LIVE
      * @acl: node_device:save:VIR_NODE_DEVICE_UPDATE_AFFECT_CONFIG
      */
-    REMOTE_PROC_NODE_DEVICE_UPDATE = 447
+    REMOTE_PROC_NODE_DEVICE_UPDATE = 447,
+
+    /**
+     * @generate: both
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_JOB_WAIT = 448
+
 };

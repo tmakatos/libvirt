@@ -1681,6 +1681,7 @@ int                 virDomainCoreDumpWithFormat (virDomainPtr domain,
                                                  unsigned int dumpformat,
                                                  unsigned int flags);
 
+
 /*
  * Screenshot of current domain console
  */
@@ -3131,6 +3132,36 @@ int virDomainBlockJobAbort(virDomainPtr dom, const char *disk,
                            unsigned int flags);
 
 /**
+ * virDomainJobOperation:
+ *
+ * Since: 3.3.0
+ */
+typedef enum {
+    VIR_DOMAIN_JOB_OPERATION_UNKNOWN = 0, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_START = 1, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_SAVE = 2, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_RESTORE = 3, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_MIGRATION_IN = 4, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_MIGRATION_OUT = 5, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT = 6, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_REVERT = 7, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_DUMP = 8, /* (Since: 3.3.0) */
+    VIR_DOMAIN_JOB_OPERATION_BACKUP = 9, /* (Since: 6.0.0) */
+    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_DELETE = 10, /* (Since: 9.0.0) */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_JOB_OPERATION_LAST /* (Since: 3.3.0) */
+# endif
+} virDomainJobOperation;
+
+/*
+ * Wait for job to finish
+ *
+ * Since 10.1.0
+ */
+int                 virDomainJobWait (virDomainPtr domain, int op);
+
+/**
  * virDomainBlockJobInfoFlags:
  *
  * Flags for use with virDomainGetBlockJobInfo
@@ -4184,29 +4215,6 @@ typedef enum {
 
 int virDomainAbortJobFlags(virDomainPtr dom,
                            unsigned int flags);
-
-/**
- * virDomainJobOperation:
- *
- * Since: 3.3.0
- */
-typedef enum {
-    VIR_DOMAIN_JOB_OPERATION_UNKNOWN = 0, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_START = 1, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_SAVE = 2, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_RESTORE = 3, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_MIGRATION_IN = 4, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_MIGRATION_OUT = 5, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT = 6, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_REVERT = 7, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_DUMP = 8, /* (Since: 3.3.0) */
-    VIR_DOMAIN_JOB_OPERATION_BACKUP = 9, /* (Since: 6.0.0) */
-    VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_DELETE = 10, /* (Since: 9.0.0) */
-
-# ifdef VIR_ENUM_SENTINELS
-    VIR_DOMAIN_JOB_OPERATION_LAST /* (Since: 3.3.0) */
-# endif
-} virDomainJobOperation;
 
 /**
  * VIR_DOMAIN_JOB_OPERATION:

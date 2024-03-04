@@ -979,6 +979,10 @@ struct remote_domain_block_job_abort_args {
         remote_nonnull_string      path;
         u_int                      flags;
 };
+struct remote_domain_job_wait_args {
+        remote_nonnull_domain      dom;
+        int                        op;
+};
 struct remote_domain_get_block_job_info_args {
         remote_nonnull_domain      dom;
         remote_nonnull_string      path;
@@ -3749,4 +3753,5 @@ enum remote_procedure {
         REMOTE_PROC_NETWORK_GET_METADATA = 445,
         REMOTE_PROC_NETWORK_EVENT_CALLBACK_METADATA_CHANGE = 446,
         REMOTE_PROC_NODE_DEVICE_UPDATE = 447,
+        REMOTE_PROC_DOMAIN_CORE_DUMP_WAIT = 448
 };
