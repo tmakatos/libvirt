@@ -1603,6 +1603,78 @@ testConnectBaselineCPU(virConnectPtr conn G_GNUC_UNUSED,
     return cpustr;
 }
 
+
+static int
+testDomainDumpJobInfoToParams(int *type,
+                              virTypedParameterPtr *params,
+                              int *nparams)
+{
+    virTypedParameterPtr par = NULL;
+    int maxpar = 0;
+    int npar = 0;
+
+    if (virTypedParamsAddInt(&par, &npar, &maxpar,
+                             VIR_DOMAIN_JOB_OPERATION,
+                             VIR_DOMAIN_JOB_OPERATION_DUMP) < 0)
+        goto error;
+
+    if (virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_TIME_ELAPSED,
+                                0) < 0)
+        goto error;
+
+    if (virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_TOTAL,
+                                0) < 0 ||
+        virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_PROCESSED,
+                                0) < 0 ||
+        virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_REMAINING,
+                                0) < 0)
+        goto error;
+
+    *type = VIR_DOMAIN_JOB_UNBOUNDED;
+    *params = par;
+    *nparams = npar;
+    return 0;
+
+error:
+    virTypedParamsFree(par, npar);
+    return -1;
+}
+
+
+/*
+ * If the environment variable LIBVIRT_TEST_DRIVER_DUMP_JOB is set, it returns
+ * a fake dump job.
+ */
+static int
+testDomainGetJobStats(virDomainPtr dom,
+                      int *type,
+                      virTypedParameterPtr *params,
+                      int *nparams,
+                      unsigned int flags)
+{
+    virDomainObj *obj;
+    int ret = 0;
+
+    virCheckFlags(0, -1);
+
+    if (!(obj = testDomObjFromDomain(dom)))
+        return -1;
+
+    if (getenv("LIBVIRT_TEST_DRIVER_DUMP_JOB")) {
+        VIR_DEBUG("pretending there's a dump job");
+        ret = testDomainDumpJobInfoToParams(type, params, nparams);
+    } else
+        *type = VIR_DOMAIN_JOB_NONE;
+
+    virDomainObjEndAPI(&obj);
+    return ret;
+}
+
+
 static int testNodeGetInfo(virConnectPtr conn,
                            virNodeInfoPtr info)
 {
@@ -2653,6 +2725,46 @@ testDomainCoreDump(virDomainPtr domain,
 {
     return testDomainCoreDumpWithFormat(domain, to,
                                         VIR_DOMAIN_CORE_DUMP_FORMAT_RAW, flags);
+}
+
+
+/*
+ * If the environment variable LIBVIRT_TEST_DRIVER_DUMP_JOB is set, its value
+ * is used as the return value.
+ */
+static int
+testDomainJobWait(virDomainPtr domain, int op)
+{
+    virDomainObj *vm;
+    int ret = 0;
+    char *s;
+
+    if (!(vm = testDomObjFromDomain(domain)))
+        return -1;
+
+    if ((virDomainJobOperation)op != VIR_DOMAIN_JOB_OPERATION_DUMP) {
+        virReportError(VIR_ERR_NO_SUPPORT,
+                _("waiting for job type %d not supported "), op);
+        goto out;
+    }
+
+    s = getenv("LIBVIRT_TEST_DRIVER_DUMP_JOB");
+    if (s) {
+        VIR_DEBUG("pretending there's a dump job, rc=%s", s);
+        ret = atoi(s);
+        if (ret != 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("dump fake fail"));
+        }
+    } else {
+        if (virDomainObjWait(vm) < 0) {
+            VIR_WARN("virDomainObjWait failed");
+            ret = -1;
+        }
+    }
+out:
+    virDomainObjEndAPI(&vm);
+    return ret;
 }
 
 
@@ -10544,6 +10656,8 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSnapshotDelete = testDomainSnapshotDelete, /* 1.1.4 */
 
     .connectBaselineCPU = testConnectBaselineCPU, /* 1.2.0 */
+    .domainGetJobStats = testDomainGetJobStats, /* 10.1.0 */
+    .domainJobWait = testDomainJobWait, /* 10.1.0 */
     .domainCheckpointCreateXML = testDomainCheckpointCreateXML, /* 5.6.0 */
     .domainCheckpointGetXMLDesc = testDomainCheckpointGetXMLDesc, /* 5.6.0 */
 
