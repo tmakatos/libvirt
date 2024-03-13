@@ -2621,7 +2621,8 @@ static int testDomainCoreDumpWithFormat(virDomainPtr domain,
     }
 
     /* we don't support non-raw formats in test driver */
-    if (dumpformat != VIR_DOMAIN_CORE_DUMP_FORMAT_RAW) {
+    if (dumpformat != VIR_DOMAIN_CORE_DUMP_FORMAT_RAW
+            && dumpformat != VIR_DOMAIN_CORE_DUMP_FORMAT_WIN_DMP) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("kdump-compressed format is not supported here"));
         goto cleanup;
