@@ -2663,6 +2663,8 @@ static int testDomainCoreDumpWithFormat(virDomainPtr domain,
     virDomainObj *privdom;
     virObjectEvent *event = NULL;
     int ret = -1;
+    char *buf = NULL;
+    int size;
 
     virCheckFlags(VIR_DUMP_CRASH | VIR_DUMP_LIVE | VIR_DUMP_BYPASS_CACHE |
                   VIR_DUMP_MEMORY_ONLY, -1);
@@ -2680,7 +2682,13 @@ static int testDomainCoreDumpWithFormat(virDomainPtr domain,
                              domain->name, to);
         goto cleanup;
     }
-    if (safewrite(fd, TEST_SAVE_MAGIC, sizeof(TEST_SAVE_MAGIC)) < 0) {
+    ret = asprintf(&buf, "%s_%u", TEST_SAVE_MAGIC, dumpformat);
+    if (ret == -1) {
+        goto cleanup;
+    }
+    size = ret;
+    ret = -1;
+    if (safewrite(fd, buf, size) < 0) {
         virReportSystemError(errno,
                              _("domain '%1$s' coredump: failed to write header to %2$s"),
                              domain->name, to);
@@ -2712,6 +2720,7 @@ static int testDomainCoreDumpWithFormat(virDomainPtr domain,
 
     ret = 0;
  cleanup:
+    free(buf);
     VIR_FORCE_CLOSE(fd);
     virDomainObjEndAPI(&privdom);
     virObjectEventStateQueue(privconn->eventState, event);
