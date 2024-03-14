@@ -2664,7 +2664,8 @@ static int testDomainCoreDumpWithFormat(virDomainPtr domain,
     virObjectEvent *event = NULL;
     int ret = -1;
 
-    virCheckFlags(VIR_DUMP_CRASH, -1);
+    virCheckFlags(VIR_DUMP_CRASH | VIR_DUMP_LIVE | VIR_DUMP_BYPASS_CACHE |
+                  VIR_DUMP_MEMORY_ONLY, -1);
 
 
     if (!(privdom = testDomObjFromDomain(domain)))
