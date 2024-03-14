@@ -5421,7 +5421,6 @@ static const vshCmdOptDef opts_dump[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
     {.name = "file",
      .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
      .help = N_("where to dump the core")
     },
     VIRSH_COMMON_OPT_LIVE(N_("perform a live core dump if supported")),
@@ -5449,6 +5448,10 @@ static const vshCmdOptDef opts_dump[] = {
      .type = VSH_OT_STRING,
      .flags = VSH_OFLAG_NONE,
      .completer = virshDomainCoreDumpFormatCompleter,
+     .help = N_("specify the format of memory-only dump")
+    },
+    {.name = "wait",
+     .type = VSH_OT_BOOL,
      .help = N_("specify the format of memory-only dump")
     },
     {.name = NULL}
@@ -5515,15 +5518,30 @@ doDump(void *opaque)
         }
     }
 
-    if (dumpformat != VIR_DOMAIN_CORE_DUMP_FORMAT_RAW) {
-        if (virDomainCoreDumpWithFormat(dom, to, dumpformat, flags) < 0) {
-            vshError(ctl, _("Failed to core dump domain '%1$s' to %2$s"), name, to);
+    if (vshCommandOptBool(cmd, "wait")) {
+        if (flags != 0) {
+            vshError(ctl, "%s", _("--wait cannot be used with any other option"));
+            goto out;
+        }
+        if (virDomainJobWait(dom, (int)VIR_DOMAIN_JOB_OPERATION_DUMP) < 0) {
+            vshError(ctl, _("Failed to wait for core dump domain"));
             goto out;
         }
     } else {
-        if (virDomainCoreDump(dom, to, flags) < 0) {
-            vshError(ctl, _("Failed to core dump domain '%1$s' to %2$s"), name, to);
+        if (to == NULL) {
+            vshError(ctl, _("missing required argument --file"));
             goto out;
+        }
+        if (dumpformat != VIR_DOMAIN_CORE_DUMP_FORMAT_RAW) {
+            if (virDomainCoreDumpWithFormat(dom, to, dumpformat, flags) < 0) {
+                vshError(ctl, _("Failed to core dump domain '%1$s' to %2$s"), name, to);
+                goto out;
+            }
+        } else {
+            if (virDomainCoreDump(dom, to, flags) < 0) {
+                vshError(ctl, _("Failed to core dump domain '%1$s' to %2$s"), name, to);
+                goto out;
+            }
         }
     }
 
